@@ -1,70 +1,67 @@
 import heapq
-
-def misplaced_tiles(state, goal):
-    return sum(state[i][j] != goal[i][j] and state[i][j] != 0 for i in range(3) for j in range(3))
-def get_neighbors(state):
-    neighbors = []
-    x, y = next((r, c) for r in range(3) for c in range(3) if state[r][c] == 0)
-    for move, (dx, dy) in {'Up': (-1, 0), 'Down': (1, 0), 'Left': (0, -1), 'Right': (0, 1)}.items():
-        new_x, new_y = x + dx, y + dy
-        if 0 <= new_x < 3 and 0 <= new_y < 3:
-            new_state = [row[:] for row in state]
-            new_state[x][y], new_state[new_x][new_y] = new_state[new_x][new_y], new_state[x][y]
-            neighbors.append((new_state, move))
-    return neighbors
-def a_star_search(initial, goal):
-    open_list = []
-    closed_set = set()
-    counter = 0
-    node = (misplaced_tiles(initial, goal), 0, misplaced_tiles(initial, goal), initial, None, "")
-    nodes = [node] 
-    heapq.heappush(open_list, (node[0], counter, 0))
-    while open_list:
-        _, _, node_idx = heapq.heappop(open_list)
-        f_cost, depth, heuristic, state, parent_idx, move = nodes[node_idx]
-        if state == goal:
-            path = []
-            current_idx = node_idx
-            while nodes[current_idx][4] is not None: 
-                curr_node = nodes[current_idx]
-                path.append((curr_node[5], curr_node[3], curr_node[1], curr_node[2]))
-                current_idx = curr_node[4]
-            return path[::-1], 0, nodes[0][2], nodes[0][0]
-        closed_set.add(tuple(map(tuple, state)))
-        for new_state, move in get_neighbors(state):
-            if tuple(map(tuple, new_state)) not in closed_set:
-                counter += 1
-                new_depth = depth + 1
-                new_h = misplaced_tiles(new_state, goal)
-                new_f = new_depth + new_h
-                new_node = (new_f, new_depth, new_h, new_state, node_idx, move)
-                nodes.append(new_node)
-                heapq.heappush(open_list, (new_f, counter, len(nodes) - 1))
-    
-    return None, 0, 0, 0
-
-def print_solution(path, initial, g, h, f):
-    format_row = lambda row: " ".join(str(num) if num != 0 else " " for num in row)
-    print("Initial State:")
-    print(f"g(n): {g} | h(n): {h} | f(n): {f}")
-    for row in initial:
-        print(format_row(row))
-    print("\nSolution Steps:")
-    for move, state, g, h in path:
-        print(f"\nMove: {move} | g(n): {g} | h(n): {h} | f(n): {g + h}")
-        for row in state:
-            print(format_row(row))
-    print("\nGoal Reached!")
-def read_state(prompt):
-    print(prompt)
-    return [list(map(int, input(f"Enter row {i+1} : ").strip().split())) for i in range(3)]
-
-initial_state = read_state("Enter the Initial State :")
-goal_state = read_state("\nEnter the Goal State :")
-    
-result = a_star_search(initial_state, goal_state)
-if result[0] is not None:
-    solution_path, initial_g, initial_h, initial_f = result
-    print_solution(solution_path, initial_state, initial_g, initial_h, initial_f)
-else:
-    print("No solution found.")
+def display_board(board):
+    for row in board:
+        print(f"{' '.join(str(num) if num != 0 else '_'for num  in row)}")
+    print()
+def empty_tile(board):
+    x,y = next((r,c) for r in range(3) for c in range(3) if board[r][c]==0)
+    return x,y
+def calculate_misplaced_tiles(initial_board,goal_board):
+    return sum(initial_board[i][j] != goal_board[i][j] and initial_board[i][j] !=0 for i in range(3) for j in range(3))
+def possible_moves(board):
+    possible_move = []
+    dictionary = {('UP',-1,0),('DOWN',1,0),('LEFT',0,-1),('RIGHT',0,1)}
+    empty_x,empty_y = empty_tile(board)
+    for move,x,y in dictionary:
+        new_x,new_y = empty_x+x,empty_y+y
+        if 0 <= new_x <3 and 0 <= new_y < 3:
+            new_board = [row[:] for row in board]
+            new_board[empty_x][empty_y],new_board[new_x][new_y] = new_board[new_x][new_y],0
+            possible_move.append((new_board,move))
+    return possible_move
+def solve_puzzle(initial_board,goal_board):
+    visited = set()
+    initial_h_value = calculate_misplaced_tiles(initial_board,goal_board)
+    queue = [(initial_h_value,0,initial_board,[],0,initial_h_value)]
+    heapq.heapify(queue)
+    move_counter = 0
+    while queue:
+        f_value,_,board,path_so_far,g_value,h_value = heapq.heappop(queue)
+        board_tuple = tuple(tuple(row) for row in board)
+        if board_tuple in visited:
+            continue
+        visited.add(board_tuple)
+        if board == goal_board :
+            return path_so_far,g_value,h_value,f_value
+        for new_board,move_name in possible_moves(board):
+            new_board_tuple = tuple(tuple(row) for row in new_board)
+            if new_board_tuple in visited:
+                continue
+            new_g_value = g_value + 1
+            new_h_value = calculate_misplaced_tiles(new_board,goal_board)
+            new_f_value = new_g_value + new_h_value
+            new_path = path_so_far + [(move_name,new_board,new_g_value,new_h_value)]
+            move_counter +=1
+            heapq.heappush(queue,(new_f_value,move_counter,new_board,new_path,new_g_value,new_h_value))  
+    return None,0,0,0
+def  display_function(path,initial_state,initial_g,initial_h,initial_f):
+    print("The Iitial state is ")
+    print(f"g(n): {initial_g} | h(n): {initial_h} | f(n): {initial_f}")
+    display_board(initial_state)
+    print("\nSolution Steps")
+    for move,board,g,h in path:
+         print(f"MOVE : {move}  | g(n): {g} | h(n): {h} | f(n): {g+h}")
+         display_board(board)
+    print("Goal Achived")       
+print("Enter the Initial State : ")
+initial_state = []
+for i in range(3):
+    initial_state.append(list(map(int,input(f"Enter the row {i+1} : ").strip().split())))
+goal_state = []
+print("Enter the Goal State : ")
+for i in range(3):
+    goal_state.append(list(map(int,input(f"Enter the row {i+1} : ").strip().split())))
+path,initial_g,initial_h,initial_f = solve_puzzle(initial_state,goal_state)
+if path is not None:
+    display_function(path,initial_state,initial_g,initial_h,initial_f)
+else: print("Solution not found")
