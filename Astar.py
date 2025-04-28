@@ -53,14 +53,17 @@ def  display_function(path,initial_state,initial_g,initial_h,initial_f):
          print(f"MOVE : {move}  | g(n): {g} | h(n): {h} | f(n): {g+h}")
          display_board(board)
     print("Goal Achived")       
-print("Enter the Initial State : ")
-initial_state = []
-for i in range(3):
-    initial_state.append(list(map(int,input(f"Enter the row {i+1} : ").strip().split())))
-goal_state = []
-print("Enter the Goal State : ")
-for i in range(3):
-    goal_state.append(list(map(int,input(f"Enter the row {i+1} : ").strip().split())))
+initial_state = [
+    [2, 8, 3],
+    [1, 6, 4],
+    [7, 0, 5]
+]
+
+goal_state = [
+    [1, 2, 3],
+    [8, 0, 4],
+    [7, 6, 5]
+]
 path,initial_g,initial_h,initial_f = solve_puzzle(initial_state,goal_state)
 if path is not None:
     display_function(path,initial_state,initial_g,initial_h,initial_f)
